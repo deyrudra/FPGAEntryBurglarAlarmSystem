@@ -1,0 +1,2 @@
+Warning (10268): Verilog HDL information at spi.v(26): always construct contains both blocking and non-blocking assignments File: C:/Users/deyru/Documents/GitHub/FPGAEntryBurglarAlarmSystem/SPI/spi.v Line: 26
+Warning (10268): Verilog HDL information at spi.v(91): always construct contains both blocking and non-blocking assignments File: C:/Users/deyru/Documents/GitHub/FPGAEntryBurglarAlarmSystem/SPI/spi.v Line: 91
