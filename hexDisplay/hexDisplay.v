@@ -1,12 +1,22 @@
 module hexDisplay(
-    input [31:0] total_seconds_elapsed,
+//    input [31:0] total_seconds_elapsed,
     output reg [6:0] HEX0,
     output reg [6:0] HEX1,
     output reg [6:0] HEX2,
     output reg [6:0] HEX3,
     output reg [6:0] HEX4,
-    output reg [6:0] HEX5
+    output reg [6:0] HEX5,
+	 input [9:0] SW
 );
+
+	// test
+	wire [31:0] total_seconds_elapsed;
+	assign total_seconds_elapsed = SW[0] ? 1509 : // 25 mins and 9 seconds
+											SW[1] ? 2042: // 34 mins 2 seconds
+											SW[2] ? 4952: // 1 hr 22 mins 32 sec
+											SW[3] ? 10: 0; // 10 seconds
+	
+	
 
     // Internal variables 
     reg [5:0] seconds;
