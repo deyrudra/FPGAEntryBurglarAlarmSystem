@@ -1,2 +1,7 @@
-
+# Ignore everything
 *
+
+# Allow .v files in all directories
+!*.v
+!*.qpf
+!*.qsf
