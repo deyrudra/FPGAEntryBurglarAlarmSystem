@@ -18,11 +18,14 @@ module spi_master
 	 
 	 // Transfer Wires
     output reg busy,              // Busy signal while transferring
-	 input wire [bits_transfer-1:0] data_in   // Data in  Ex. 16'hDEAD
+	 input wire [bits_transfer-1:0] data_in,   // Data in  Ex. 16'hDEAD
+	 output reg [bits_transfer-1:0] data_out   // Data out
 );
 	 // reg [15:0] data_in = 16'hDEAD;           // Data in 
     reg [counter_width:0] bit_count;         // Bit counter
+	 reg [counter_width:0] bit_count2;         // Bit counter
     reg [bits_transfer-1:0] shift_reg;         // 8-bit shift register for number
+	 reg [bits_transfer-1:0] receive_reg;
     reg [1:0] state;             // FSM state
 
     localparam IDLE     = 2'b00; // Idle state
@@ -49,21 +52,20 @@ module spi_master
             state <= IDLE;
             GPIO_1_2 <= 0; // SPI Clock
 				GPIO_1_1 <= 1; // SS
-				// GPIO_1_0 <= 1; //temp
-            // GPIO_1_0 <= 0; // MOSI
             busy <= 0;
             bit_count <= 0;
             shift_reg <= 0;
+				receive_reg <= 0;
+				data_out <= 0;
         end else begin
             case (state)
                 IDLE: begin
                     GPIO_1_2 <= 0; // SCLK low
-						  GPIO_1_0 <= data_in[bits_transfer-1]; //temp
+						  GPIO_1_0 <= data_in[bits_transfer-1]; // MSB
 						  bit_count <= 1; // temp
-                    // GPIO_1_0 <= 0; // MOSI low
                     GPIO_1_1 <= 1; // SS high (inactive)
                     busy <= 0;
-						  // bit_count <= 0;
+						  bit_count <= 0;
 						  shift_reg <= 0;
                     if (!start) begin
                         state <= LOAD;
@@ -90,17 +92,24 @@ module spi_master
                                 state <= IDLE; // End transmission
                                 GPIO_1_1 <= 1; // SS high (deselect slave)
                                 busy <= 0;     // Not busy anymore
+										  data_out <= receive_reg; // test
                             end else begin
                                 bit_count <= bit_count - 1;
                             end
-                        end
+								 end
+								 
+								 if (~GPIO_1_2) begin
+									receive_reg <= {receive_reg[bits_transfer-2:0], GPIO_0_0};		
+								 end
+
                     end
                 end
 
                 default: state <= IDLE;
             endcase
         end
+		  
+		
     end
-
 
 endmodule

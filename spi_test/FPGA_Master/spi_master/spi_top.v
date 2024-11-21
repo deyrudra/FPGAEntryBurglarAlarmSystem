@@ -8,9 +8,11 @@ module spi_top (input CLOCK_50,      // 50 MHz system clock
 
 	parameter bits = 8; // Defines the size of the dataIn Register
 
-	wire [bits-1:0] data;
+	wire [bits-1:0] data_in;
+	
+	wire [bits-1:0] data_out;
 
-	assign data = SW[0] ? 8'hAA :
+	assign data_in = SW[0] ? 8'hAA :
 				  SW[1] ? 8'hBB :
 				  SW[2] ? 8'hCC :
 				  SW[3] ? 8'hDD :
@@ -19,7 +21,7 @@ module spi_top (input CLOCK_50,      // 50 MHz system clock
 				  SW[6] ? 8'h11 : 
 				  SW[7] ? 8'h22 : 
 				  SW[8] ? 8'h33 : 
-				  SW[9] ? 8'h44 : 8'h55;
+				  SW[9] ? 8'h44 : data_out;
 					   
 	
 	spi_master 
@@ -37,7 +39,8 @@ module spi_top (input CLOCK_50,      // 50 MHz system clock
 		 GPIO_1[1],         // SS (Slave Select)
 		 GPIO_1[2],         // SPI Clock
 		 LEDR[0],            // LEDR[0] signal for during transfer
-		 data           // Data to be transferred
+		 data_in,           // Data to be transferred
+		 data_out
 	); 
 
 
