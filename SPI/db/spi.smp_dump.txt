@@ -1,8 +1,0 @@
-
-State Machine - |spi|state
-Name state.transact state.load state.idle state.reset state.unload 
-state.reset 0 0 0 0 0 
-state.idle 0 0 1 1 0 
-state.load 0 1 0 1 0 
-state.transact 1 0 0 1 0 
-state.unload 0 0 0 1 1 
