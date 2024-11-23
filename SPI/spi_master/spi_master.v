@@ -84,7 +84,7 @@ module spi_master
 
                 TRANSFER: begin
                     if (sclk_enable) begin
-                        GPIO_1_2 <= ~GPIO_1_2; // Toggle SPI clock
+                            GPIO_1_2 <= ~GPIO_1_2; // Toggle SPI clock
                         if (GPIO_1_2) begin
                             // Shift data out on rising edge of SCLK
                             GPIO_1_0 <= shift_reg[bits_transfer-2]; // Send MSB first
@@ -113,5 +113,3 @@ module spi_master
 		
     end
 endmodule
-
-
