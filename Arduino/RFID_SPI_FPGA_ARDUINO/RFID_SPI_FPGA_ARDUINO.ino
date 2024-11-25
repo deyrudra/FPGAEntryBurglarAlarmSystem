@@ -24,7 +24,7 @@ const int SS_FPGA = 6;
 
 volatile bool ssActive = false;
 volatile uint8_t receivedData = 0;
-volatile uint8_t sendData = 0x55; // Data to send to master (example)
+ // Data to send to master (example)
 
 
 // RFID SPI
@@ -57,6 +57,9 @@ Uid uid;
 
 void setup()
 {
+
+  // Serial.begin(9600);
+
   lcd.begin(LCDColumns, LCDRows); //Configure the LCD
   lcd.setCursor(0,0);
   
@@ -66,8 +69,7 @@ void setup()
   pinMode(MOSI_FPGA, INPUT);
   pinMode(SCK_FPGA, INPUT);
   pinMode(SS_FPGA, INPUT);
-  // Enable Pull-up Resistor on SS
-  digitalWrite(SS_FPGA, HIGH);
+  digitalWrite(SS_FPGA, HIGH);  // Enable Pull-up Resistor on SS
 
 
   // Configure RFID SPI Pins
@@ -78,12 +80,13 @@ void setup()
 void loop()
 {
   // lcd.clear();
+  byte misoData = 0xAB;
 
   if (digitalRead(SS_FPGA) == LOW) {
     ssActive = true;
     receivedData = 0;
 
-    // Process 8 bits of SPI
+    // Process 8 bits of FPGA SPI
     for (int i = 0; i < 8; i++) {
       while (digitalRead(SCK_FPGA) == LOW); // Wait for clock to go HIGH
 
@@ -93,14 +96,27 @@ void loop()
         receivedData |= 1;
       }
 
+
+
       while (digitalRead(SCK_FPGA) == HIGH); // Wait for clock to go LOW
+            // Write MISO bit
+      if (bitRead(misoData, 7-i)) {
+        // Serial.println("HERE:");
+        // Serial.println(misoData, BIN);
+        // Serial.println(bitRead(misoData, i));
+        digitalWrite(MISO_FPGA, HIGH);
+      }
+      else {
+        digitalWrite(MISO_FPGA, LOW);
+      }
     }
+
     // SS goes HIGH: Transaction ends
     while (digitalRead(SS_FPGA) == LOW);
     ssActive = false;
     // Debug Output
     // Serial.print("Received Data: ");
-    // Serial.println(receivedData, HEX);
+    // Serial.println(misoData, BIN);
 
   }
 

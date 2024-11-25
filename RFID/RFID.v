@@ -8,7 +8,7 @@ module RFID (input CLOCK_50,      // 50 MHz system clock
 );
 	// spi_master common inputs
 	// parameter bits = 8; // Defines the size of the dataIn Register
-	parameter spi_clk_div = 28'd781250; // How much to divide the 50MHz transfer to. 6250000 will give us 8Hz.
+	parameter spi_clk_div = 28'd1562500; // How much to divide the 50MHz transfer to. 6250000 will give us 8Hz.
 	reg [7:0] data_in;
 	wire [7:0] data_out;
 	wire reset;
