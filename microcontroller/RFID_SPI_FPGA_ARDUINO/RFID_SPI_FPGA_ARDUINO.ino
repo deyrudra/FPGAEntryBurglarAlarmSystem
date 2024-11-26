@@ -59,13 +59,15 @@ byte misoData = 0x00;
 bool sendUID = false;
 int count = 0;
 Uid currentUID;
-
 Uid noUID;
+
+String systemState = "DISENGAGED"; // Default System Disengaged
+String prevState;
 
 void setup()
 {
 
-  Serial.begin(9600);
+  // Serial.begin(9600);
 
   lcd.begin(LCDColumns, LCDRows); //Configure the LCD
   lcd.setCursor(0,0);
@@ -82,24 +84,25 @@ void setup()
   // Configure RFID SPI Pins
   SPI.begin();
   rc_init();
+
+
+  // Reset Registers/Data
+  uid = noUID;
   
+
+  // Startup Message
+  lcd.clear();             // Clear previous value (4 spaces for old data)
+  lcd.setCursor(0, 0);
+  lcd.print("ENTRY & BURGLAR ");
+  lcd.setCursor(0, 1);           // Reset to counter position
+  lcd.print("  ALARM SYSTEM");
+
+
+  delay(3000); // Delay 3 seconds.
 }
 
 void loop()
 {
-  // lcd.clear();
-  
-
-
-  // // Select one of the cards
-  
-
-
-
-  // delay(1500);
-
-  
-
   while (digitalRead(SS_FPGA) == HIGH);
 
   // SPI communication: receive data and respond
@@ -109,7 +112,6 @@ void loop()
     count = 0;
     sendUID = true;
     currentUID = uid;
-    Serial.println("NOW");
   }
 
   if (sendUID == true) {
@@ -124,11 +126,26 @@ void loop()
     count++;
   }
 
+  if (receivedData == 0xBA) {
+    systemState = "DISENGAGED";
+  }
 
-  Serial.print("HEX: ");
-  Serial.print(misoData, HEX);
-  Serial.print("   Binary: ");
-  Serial.println(misoData, BIN);
+  if (receivedData == 0xBB) {
+    systemState = "ENGAGED";
+  }
+
+  if (receivedData == 0xBC) {
+    systemState = "COUNTDOWN";
+  } 
+
+  if (receivedData == 0xBD) {
+    systemState = "ALARM";
+  }
+
+  // Serial.print("HEX: ");
+  // Serial.print(misoData, HEX);
+  // Serial.print("   Binary: ");
+  // Serial.println(misoData, BIN);
 
 
   receivedData = 0; // Clear the received data buffer
@@ -158,31 +175,28 @@ void loop()
   // RFID KEY
 
   if (!rc_picc_isNewKeyPresent()) {
-    // lcd.clear();
-    // lcd.print("No card.");
-    // return;
   } 
   else {
     if (!PICC_ReadCardSerial()) {
-      // lcd.clear();
-      // lcd.print("No card.");
-      // return;
     }
     else {
     }
   }
 
+  if (prevState != systemState) {
+    prevState = systemState;
+    lcd.clear();             // Clear previous value (4 spaces for old data)
+    lcd.setCursor(0, 0);
+    lcd.print("STATE:");
+    if (systemState != "DISENGAGED") {
+      lcd.print(" ");
+    }
+    lcd.print(systemState);
+    lcd.setCursor(0, 1); 
+    lcd.print("KEY1: SET ALARM");
+    lcd.setCursor(0, 1);           // Reset to counter position
+  }
 
-    // lcd.setCursor(0, 0); 
-    // lcd.clear();             // Clear previous value (4 spaces for old data)
-    // lcd.print("Card UID: ");
-    // lcd.setCursor(0, 1);           // Reset to counter position
-    // for (byte i = 0; i < uid.size; i++) {
-    //   lcd.print(uid.uidByte[i] < 0x10 ? " 0" : " ");
-    //   lcd.print(uid.uidByte[i], HEX);
-    // }
-    // lcd.print(receivedData, BIN);
- 
 
 }
 
@@ -433,8 +447,8 @@ void PCD_SetRegisterBitMask(byte reg,  ///< The register to update. One of the P
 }
 
 
-StatusCode PICC_Select(	Uid *uid,			///< Pointer to Uid struct. Normally output, but can also be used to supply a known UID.
-											byte validBits		///< The number of known UID bits supplied in *uid. Normally 0. If set you must also supply uid->size.
+StatusCode PICC_Select(	Uid *uid,
+											byte validBits
 										 ) {
 	bool uidComplete;
 	bool selectDone;
@@ -444,12 +458,12 @@ StatusCode PICC_Select(	Uid *uid,			///< Pointer to Uid struct. Normally output,
 	byte count;
 	byte checkBit;
 	byte index;
-	byte uidIndex;					// The first index in uid->uidByte[] that is used in the current Cascade Level.
-	int8_t currentLevelKnownBits;		// The number of known UID bits in the current Cascade Level.
-	byte buffer[9];					// The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2 bytes CRC_A
-	byte bufferUsed;				// The number of bytes used in the buffer, ie the number of bytes to transfer to the FIFO.
-	byte rxAlign;					// Used in BitFramingReg. Defines the bit position for the first bit received.
-	byte txLastBits;				// Used in BitFramingReg. The number of valid bits in the last transmitted byte. 
+	byte uidIndex;
+	int8_t currentLevelKnownBits;
+	byte buffer[9];
+	byte bufferUsed;
+	byte rxAlign;
+	byte txLastBits;
 	byte *responseBuffer;
 	byte responseLength;
 	
@@ -459,70 +473,65 @@ StatusCode PICC_Select(	Uid *uid,			///< Pointer to Uid struct. Normally output,
 	}
 	
 	// Prepare MFRC522
-	PCD_ClearRegisterBitMask(0x0E << 1, 0x80);		// ValuesAfterColl=1 => Bits received after collision are cleared.
+	PCD_ClearRegisterBitMask(0x0E << 1, 0x80);
 	
 	uidComplete = false;
 	while (!uidComplete) {
-		// Set the Cascade Level in the SEL byte, find out if we need to use the Cascade Tag in byte 2.
-
     buffer[0] = 0x93;
   
-		// How many UID bits are known in this Cascade Level?
 		currentLevelKnownBits = validBits;
 		if (currentLevelKnownBits < 0) {
 			currentLevelKnownBits = 0;
 		}
 
-		index = 2; // destination index in buffer[]
+		index = 2; 
 
-		byte bytesToCopy = currentLevelKnownBits / 8 + (currentLevelKnownBits % 8 ? 1 : 0); // The number of bytes needed to represent the known bits for this level.
+		byte bytesToCopy = currentLevelKnownBits / 8 + (currentLevelKnownBits % 8 ? 1 : 0);
 		if (bytesToCopy) {
 			byte maxBytes = 4; 
 			if (bytesToCopy > maxBytes) {
 				bytesToCopy = maxBytes;
 			}
 		}
-		// Repeat anti collision loop until we can transmit all UID bits + BCC and receive a SAK - max 32 iterations.
 		selectDone = false;
 		while (!selectDone) {
 
 				txLastBits		= currentLevelKnownBits % 8;
 				count			= currentLevelKnownBits / 8;	// Number of whole bytes in the UID part.
-				index			= 2 + count;					// Number of whole bytes: SEL + NVB + UIDs
-				buffer[1]		= (index << 4) + txLastBits;	// NVB - Number of Valid Bits
+				index			= 2 + count;
+				buffer[1]		= (index << 4) + txLastBits;
 				bufferUsed		= index + (txLastBits ? 1 : 0);
 				// Store response in the unused part of buffer
 				responseBuffer	= &buffer[index];
 				responseLength	= sizeof(buffer) - index;
 			
-			rxAlign = txLastBits;											// Having a separate variable is overkill. But it makes the next line easier to read.
-			rc_writeRegister(0x0D << 1, (rxAlign << 4) + txLastBits);	// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
+			rxAlign = txLastBits;										
+			rc_writeRegister(0x0D << 1, (rxAlign << 4) + txLastBits);
 			
-			// Transmit the buffer and receive the response.
 			result = PCD_TransceiveData(buffer, bufferUsed, responseBuffer, &responseLength, &txLastBits, rxAlign);
-			if (result == STATUS_COLLISION) { // More than one PICC in the field => collision.
-				byte valueOfCollReg = rc_readRegister(0x0E << 1); // CollReg[7..0] bits are: ValuesAfterColl reserved CollPosNotValid CollPos[4:0]
+			if (result == STATUS_COLLISION) {
+				byte valueOfCollReg = rc_readRegister(0x0E << 1);
 
-				count			= currentLevelKnownBits % 8; // The bit to modify
-				index			= 1 + (currentLevelKnownBits / 8) + (count ? 1 : 0); // First byte is index 0.
+				count			= currentLevelKnownBits % 8;
+				index			= 1 + (currentLevelKnownBits / 8) + (count ? 1 : 0); 
 				buffer[index]	|= (1);
 			}
-			else { // STATUS_OK
-				if (currentLevelKnownBits >= 32) { // This was a SELECT.
-					selectDone = true; // No more anticollision 
-					// We continue below outside the while.
+			else { 
+				if (currentLevelKnownBits >= 32) { 
+					selectDone = true;
+
 				}
-				else { // This was an ANTICOLLISION.
-					// We now have all 32 bits of the UID in this Cascade Level
+				else { 
+
 					currentLevelKnownBits = 32;
-					// Run loop again to do the SELECT.
+
 				}
 			}
-		} // End of while (!selectDone)
+		} 
 
 		
-		// Copy the found UID bytes from buffer[] to uid->uidByte[]
-		index	=  2; // source index in buffer[]
+
+		index	=  2; 
 		bytesToCopy	= 4;
 		for (count = 0; count < bytesToCopy; count++) {
 			uid->uidByte[count] = buffer[index++];

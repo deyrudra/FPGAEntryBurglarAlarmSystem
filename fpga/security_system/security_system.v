@@ -61,9 +61,6 @@ module security_system (input CLOCK_50,
 	reg start_timer = 0;
 	
 	
-	
-	
-	
 	// test
 	assign LEDG[7:0] = data_out[7:0];
 	reg test = 0;
@@ -87,9 +84,6 @@ module security_system (input CLOCK_50,
 		 data_in,           // Data to be transferred
 		 data_out           // Data to be received
 	);
-	
-	
-
 	
 	
 
@@ -120,9 +114,10 @@ module security_system (input CLOCK_50,
 	reg clock3;
 	wire control2;
 	wire engageSystem;
-	assign engageSystem = ~KEY[1];	 
+	assign engageSystem = ~KEY[1];
+	reg [7:0] systemStateCommand = 8'hBA;
 	 
-	 // temp
+	// temp
 	// assign control = ~KEY[2]; // manual control for now 
 	// assign control2 = ~KEY[2]; // manual control for now 
 	assign control = 1; // manual control for now 
@@ -356,6 +351,34 @@ module security_system (input CLOCK_50,
 								end
 								
 								32'd15: begin
+									if (system_state == 2'd0)
+									begin
+										systemStateCommand = 8'hBA;
+									end
+									else if (system_state == 2'd1)
+									begin
+										systemStateCommand = 8'hBB;
+									end
+									else if (system_state == 2'd2)
+									begin
+										systemStateCommand = 8'hBC;
+									end
+									else if (system_state == 2'd3)
+									begin
+										systemStateCommand = 8'hBD;
+									end
+									step <= step + 1;
+								end
+								
+								32'd16: begin
+									loadData(systemStateCommand);
+								end
+								
+								32'd17: begin
+									sendData();
+								end
+								
+								32'd18: begin
 									  step <= 32'd0;
 								end
 								endcase
@@ -364,24 +387,9 @@ module security_system (input CLOCK_50,
 						end
 					end
 					// End Of Process #1 Obtaining the UID --------------------------------------------------
-					
-					// Process #2 Updating the System State -------------------------------------------------
-					2'd1:
-					begin
-						
-						
-					end
-					// Process #3 Engaging the HEX Time Counter -------------------------------------------
-					2'd2: 
-					begin
-					end
-					
-					2'd3: // Process #4 VGA
-					begin
-					end
+
 				endcase
 				// end
-				
         end
 		  
 		  
