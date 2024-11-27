@@ -4,7 +4,7 @@ module security_system (input CLOCK_50,
 	 input [9:0] SW,
     output [5:0] GPIO_1,
     output [9:0] LEDR,
-	 output [7:0] LEDG,
+	 //output [7:0] LEDG,
 	 output reg [6:0] HEX0, 
     output reg [6:0] HEX1,  
     output reg [6:0] HEX2,   
@@ -62,7 +62,7 @@ module security_system (input CLOCK_50,
 	
 	
 	// test
-	assign LEDG[7:0] = data_out[7:0];
+	// assign LEDG[7:0] = data_out[7:0];
 	reg test = 0;
 	
 	// 8 bit SPI Bus Instantiation
